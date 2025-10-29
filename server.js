@@ -10,18 +10,40 @@ const path = require('path');
 const PORT = process.env.PORT || 3000;
 const app = express();
 
+// Middleware
 app.use(bodyParser.json());
+app.use(express.json());
+
+// Routes
 app.use('/countries', countriesRouter);
 
-// ✅ Correct DB Test Route
+// ✅ Health Check (for Railway)
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+// ✅ Single DB Test Route
 app.get("/test-db", async (req, res) => {
   try {
     const pool = getPool();
-    const [rows] = await pool.query("SELECT 1");
-    res.json({ db: "connected", result: rows });
+    const [rows] = await pool.query("SELECT 1 + 1 AS solution");
+    res.json({ 
+      success: true, 
+      message: 'Database connection successful',
+      data: rows 
+    });
   } catch (err) {
     console.error("DB Test Error:", err);
-    res.status(500).json({ error: "DB Error" });
+    res.status(500).json({ 
+      success: false, 
+      error: "Database connection failed",
+      details: process.env.NODE_ENV === 'production' ? undefined : err.message 
+    });
   }
 });
 
@@ -32,32 +54,56 @@ app.get('/status', async (req, res, next) => {
     const [countRows] = await pool.query('SELECT COUNT(*) as total_countries FROM countries');
     const [[metaRow]] = await pool.query('SELECT last_refreshed_at FROM meta WHERE id = 1');
     const last = metaRow ? new Date(metaRow.last_refreshed_at).toISOString() : null;
-    res.json({ total_countries: countRows[0].total_countries, last_refreshed_at: last });
+    res.json({ 
+      total_countries: countRows[0].total_countries, 
+      last_refreshed_at: last 
+    });
   } catch (err) {
     next(err);
   }
 });
 
-// ✅ Serve Stored Summary Image (optional task feature)
+// ✅ Serve Stored Summary Image
 app.get('/countries/image', (req, res) => {
-  const filePath = path.resolve((process.env.CACHE_DIR || './cache') + '/summary.png');
-  if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Summary image not found' });
+  const cacheDir = process.env.CACHE_DIR || './cache';
+  const filePath = path.resolve(path.join(cacheDir, 'summary.png'));
+  
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: 'Summary image not found' });
+  }
   
   res.type('image/png').sendFile(filePath);
 });
 
+// Error handling
 app.use(errorHandler);
 
-// ✅ Start Server Only if Not Running Tests
+// 404 handler
+app.use('*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'Route not found'
+  });
+});
+
+// ✅ Start Server
 if (require.main === module) {
   (async () => {
     try {
       await initDb();
+      
+      // Create cache directory if it doesn't exist
       const cacheDir = process.env.CACHE_DIR || './cache';
-      if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
-      app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
+      if (!fs.existsSync(cacheDir)) {
+        fs.mkdirSync(cacheDir, { recursive: true });
+      }
+      
+      app.listen(PORT, () => {
+        console.log(`✅ Server running on port ${PORT}`);
+        console.log(`✅ Environment: ${process.env.NODE_ENV || 'development'}`);
+      });
     } catch (err) {
-      console.error('❌ Failed to start:', err);
+      console.error('❌ Failed to start server:', err.message);
       process.exit(1);
     }
   })();
