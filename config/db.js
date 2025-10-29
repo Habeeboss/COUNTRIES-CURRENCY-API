@@ -8,17 +8,27 @@ async function initDb() {
   try {
     const sslConfig = await getSSLConfig();
 
-    pool = mysql.createPool({
-      host: process.env.DB_HOST || 'localhost',
-      user: process.env.DB_USER || 'root',
-      password: process.env.DB_PASSWORD || '',
-      database: process.env.DB_NAME || 'my_countries_api_data',
-      port: process.env.DB_PORT || 3306,
+    // Use Railway's provided database if available, otherwise use Aiven
+    const dbConfig = {
+      host: process.env.DB_HOST || process.env.MYSQLHOST || 'localhost',
+      user: process.env.DB_USER || process.env.MYSQLUSER || 'root',
+      password: process.env.DB_PASSWORD || process.env.MYSQLPASSWORD || '',
+      database: process.env.DB_NAME || process.env.MYSQLDATABASE || 'my_countries_api_data',
+      port: process.env.DB_PORT || process.env.MYSQLPORT || 3306,
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0,
       ssl: sslConfig,
+    };
+
+    console.log('🔧 Database Configuration:', {
+      host: dbConfig.host,
+      user: dbConfig.user,
+      database: dbConfig.database,
+      port: dbConfig.port
     });
+
+    pool = mysql.createPool(dbConfig);
 
     // Test connection
     await pool.query("SELECT 1");
@@ -29,6 +39,9 @@ async function initDb() {
     
   } catch (error) {
     console.error("❌ MySQL Connection Failed:", error.message);
+    console.error("Full error:", error);
+    
+    // Don't exit in production - let Railway handle retries
     if (process.env.NODE_ENV === 'development') {
       process.exit(1);
     }
@@ -37,12 +50,11 @@ async function initDb() {
 }
 
 async function getSSLConfig() {
+  // For Railway + Aiven, we need SSL
   const possiblePaths = [
     process.env.SSL_CA_PATH,
     './aiven-ca.pem',
-    './ca.pem',
-    path.join(__dirname, 'aiven-ca.pem'),
-    path.join(__dirname, 'ca.pem'),
+    '/etc/ssl/certs/ca-certificates.crt', // System certs
   ];
 
   for (const caPath of possiblePaths) {
@@ -52,10 +64,17 @@ async function getSSLConfig() {
     }
   }
 
-  console.warn("⚠️ SSL CA certificate not found. Connecting without SSL...");
+  // For Railway's internal MySQL, SSL might not be needed
+  if (process.env.MYSQLHOST && process.env.MYSQLHOST.includes('railway.internal')) {
+    console.log("ℹ️  Using Railway internal MySQL - SSL not required");
+    return null;
+  }
+
+  console.warn("⚠️ SSL CA certificate not found. This may fail for Aiven.");
   return null;
 }
 
+// ... rest of your db.js code remains the same
 async function createTables() {
   const tablesSQL = [
     `CREATE TABLE IF NOT EXISTS countries (
@@ -83,19 +102,17 @@ async function createTables() {
     `INSERT IGNORE INTO meta (id, last_refreshed_at) VALUES (1, NOW())`
   ];
 
-const [tables] = await pool.query("SHOW TABLES");
-console.log("📊 Current tables:", tables.map(t => Object.values(t)[0]));
-
   try {
-    // Execute each SQL statement separately
     for (const sql of tablesSQL) {
       await pool.query(sql);
-      console.log(`✅ Executed: ${sql.split('(')[0]}...`);
     }
-    console.log("✅ All database tables verified/created");
+    console.log("✅ Database tables verified/created");
+    
+    // Verify tables
+    const [tables] = await pool.query("SHOW TABLES");
+    console.log("📊 Current tables:", tables.map(t => Object.values(t)[0]));
   } catch (error) {
     console.error("❌ Table creation failed:", error.message);
-    console.error("Full error:", error);
     throw error;
   }
 }
