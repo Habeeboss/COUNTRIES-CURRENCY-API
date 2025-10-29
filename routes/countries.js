@@ -5,22 +5,21 @@ const { getPool } = require("../config/db");
 const fs = require("fs");
 const path = require("path");
 
-// ✅ Refresh endpoint (waits for process completion)
 router.post("/refresh", async (req, res) => {
-  console.log('🔄 Refresh endpoint called at:', new Date().toISOString());
+  console.log(' Refresh endpoint called at:', new Date().toISOString());
   
   try {
-    console.log('📡 Starting refresh process...');
+    console.log('Starting refresh process...');
     const result = await countryService.fetchAndSaveCountries();
 
-    console.log(`🎉 Refresh completed successfully: ${result.updated} countries updated`);
+    console.log(` Refresh completed successfully: ${result.updated} countries updated`);
 
     res.json({
       updated: result.updated
     });
 
   } catch (error) {
-    console.error('❌ Refresh process failed:', error.message);
+    console.error(' Refresh process failed:', error.message);
     res.status(500).json({
       error: 'Failed to refresh countries',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -28,7 +27,6 @@ router.post("/refresh", async (req, res) => {
   }
 });
 
-// ✅ Test refresh endpoint
 router.post("/refresh-test", async (req, res) => {
   console.log('🔄 Refresh test endpoint called');
   res.json({
@@ -37,7 +35,6 @@ router.post("/refresh-test", async (req, res) => {
   });
 });
 
-// ✅ Get all countries
 router.get("/", async (req, res) => {
   try {
     const filters = {
@@ -56,7 +53,6 @@ router.get("/", async (req, res) => {
   }
 });
 
-// ✅ Get country by name
 router.get("/:name", async (req, res) => {
   try {
     const country = await countryService.getCountryByName(req.params.name);
@@ -70,7 +66,6 @@ router.get("/:name", async (req, res) => {
   }
 });
 
-// ✅ Add country
 router.post("/add", async (req, res) => {
   try {
     const pool = getPool();
@@ -100,7 +95,6 @@ router.post("/add", async (req, res) => {
   }
 });
 
-// ✅ Delete country
 router.delete("/:name", async (req, res) => {
   try {
     const deleted = await countryService.deleteCountry(req.params.name);
@@ -114,7 +108,6 @@ router.delete("/:name", async (req, res) => {
   }
 });
 
-// ✅ Get status
 router.get("/status", async (req, res) => {
   try {
     const status = await countryService.getStatus();
@@ -125,7 +118,6 @@ router.get("/status", async (req, res) => {
   }
 });
 
-// ✅ Get summary image
 router.get("/image", (req, res) => {
   const cacheDir = process.env.CACHE_DIR || './cache';
   const filePath = path.resolve(path.join(cacheDir, 'summary.png'));
@@ -137,7 +129,6 @@ router.get("/image", (req, res) => {
   res.type('image/png').sendFile(filePath);
 });
 
-// ✅ Get top countries by GDP
 router.get("/gdp/top", async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 5;

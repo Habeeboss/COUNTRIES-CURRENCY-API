@@ -81,7 +81,6 @@ exports.getStatus = async (req, res) => {
   }
 };
 
-// New endpoint for serving summary image
 exports.getSummaryImage = (req, res) => {
   try {
     const imagePath = path.join(__dirname, "../cache/summary.png");
@@ -96,7 +95,6 @@ exports.getSummaryImage = (req, res) => {
   }
 };
 
-// Top countries by GDP
 exports.getTopCountries = async (req, res) => {
   try {
     const limit = Number(req.query.limit) || 5;
@@ -108,8 +106,6 @@ exports.getTopCountries = async (req, res) => {
   }
 };
 
-
-// Add a country manually
 exports.addCountry = async (req, res) => {
   try {
     const {
@@ -160,7 +156,6 @@ exports.addCountry = async (req, res) => {
       now,
     ]);
 
-    // Regenerate summary image after adding
     const countryService = require("../services/countryService");
     await countryService.generateSummaryImage();
 

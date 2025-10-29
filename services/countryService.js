@@ -40,7 +40,6 @@ function randomMultiplier() {
   return Math.floor(Math.random() * (2000 - 1000 + 1)) + 1000;
 }
 
-// ✅ OPTIMIZED: Process countries in parallel batches
 async function saveCountries(countries, rates) {
   const pool = getPool();
   const now = new Date();
@@ -48,12 +47,10 @@ async function saveCountries(countries, rates) {
   let count = 0;
   const batchSize = 25;
 
-  // Process in batches
   for (let i = 0; i < countries.length; i += batchSize) {
     const batch = countries.slice(i, i + batchSize);
     console.log(`🔄 Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(countries.length/batchSize)}`);
     
-    // Process batch in parallel
     const batchPromises = batch.map(async (c) => {
       if (!c.name || !c.population) return null;
 
@@ -98,7 +95,7 @@ async function saveCountries(countries, rates) {
         ]);
         return true;
       } catch (error) {
-        console.error(`❌ Error processing ${c.name}:`, error.message);
+        console.error(` Error processing ${c.name}:`, error.message);
         return false;
       }
     });
@@ -107,16 +104,13 @@ async function saveCountries(countries, rates) {
     count += results.filter(r => r.status === 'fulfilled' && r.value === true).length;
   }
 
-  // Update meta table
   await pool.query("UPDATE meta SET last_refreshed_at = ? WHERE id = 1", [now]);
 
-  // Generate summary image
   await generateSummaryImage();
 
   return count;
 }
 
-// ✅ QUICK REFRESH: Only update exchange rates and GDP (much faster)
 async function quickRefresh() {
   const pool = getPool();
   const now = new Date();
@@ -124,17 +118,17 @@ async function quickRefresh() {
   try {
     console.log('⚡ Starting quick refresh (exchange rates only)...');
     
-    // Fetch only exchange rates
+  
     const rateRes = await axios.get("https://open.er-api.com/v6/latest/USD", { 
       timeout: Number(process.env.EXTERNAL_TIMEOUT_MS || 10000) 
     });
     const rates = rateRes.data.rates;
     
-    // Get all countries from database
+
     const [countries] = await pool.query("SELECT id, name, population, currency_code FROM countries");
     
     let updatedCount = 0;
-    const batchSize = 50; // Larger batch size for quick update
+    const batchSize = 50; 
     
     for (let i = 0; i < countries.length; i += batchSize) {
       const batch = countries.slice(i, i + batchSize);
@@ -156,7 +150,7 @@ async function quickRefresh() {
           );
           return true;
         } catch (error) {
-          console.error(`❌ Error updating ${country.name}:`, error.message);
+          console.error(` Error updating ${country.name}:`, error.message);
           return false;
         }
       });
@@ -170,11 +164,11 @@ async function quickRefresh() {
     // Update meta table
     await pool.query("UPDATE meta SET last_refreshed_at = ? WHERE id = 1", [now]);
     
-    console.log(`✅ Quick refresh completed: ${updatedCount} countries updated`);
+    console.log(` Quick refresh completed: ${updatedCount} countries updated`);
     return { updated: updatedCount };
     
   } catch (error) {
-    console.error('❌ Quick refresh failed:', error.message);
+    console.error(' Quick refresh failed:', error.message);
     throw error;
   }
 }
@@ -210,9 +204,9 @@ async function generateSummaryImage() {
     const outPath = path.join(cacheDir, "summary.png");
     fs.writeFileSync(outPath, canvas.toBuffer("image/png"));
     
-    console.log("✅ Summary image generated");
+    console.log(" Summary image generated");
   } catch (error) {
-    console.error("❌ Error generating summary image:", error.message);
+    console.error(" Error generating summary image:", error.message);
   }
 }
 
@@ -223,7 +217,7 @@ async function fetchAndSaveCountries() {
     const count = await saveCountries(countries, rates);
     return { updated: count };
   } catch (error) {
-    console.error("❌ fetchAndSaveCountries error:", error.message);
+    console.error(" fetchAndSaveCountries error:", error.message);
     throw error;
   }
 }
@@ -304,5 +298,5 @@ module.exports = {
   getStatus,
   getTopCountries,
   generateSummaryImage,
-  quickRefresh  // Export the new quick refresh function
+  quickRefresh 
 };
