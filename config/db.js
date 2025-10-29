@@ -1,22 +1,18 @@
 const mysql = require("mysql2/promise");
-require("dotenv").config();
-
 let pool;
 
 async function initDb() {
   try {
     pool = mysql.createPool({
-      host: process.env.DB_HOST || process.env.MYSQLHOST || "localhost",
-      user: process.env.DB_USER || process.env.MYSQLUSER || "root",
+      host: process.env.DB_HOST || process.env.MYSQL_HOST || "localhost",
+      user: process.env.DB_USER || process.env.MYSQLROOT|| "root",
       password: process.env.DB_PASSWORD || process.env.MYSQLPASSWORD || "",
-      database: process.env.DB_NAME || process.env.MYSQLDATABASE || "my_countries_api_data",
-      port: process.env.DB_PORT || process.env.MYSQLPORT || 3306,
+      database: process.env.DB_NAME || process.env.MYSQLDATABASE||"my_countries_api_data",
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0
     });
 
-    // Test the connection
     await pool.query("SELECT 1");
     console.log("✅ MySQL Connected Successfully");
   } catch (error) {
