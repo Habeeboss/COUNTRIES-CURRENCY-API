@@ -34,7 +34,7 @@ CREATE TABLE countries (
     UNIQUE KEY uq_name_normalized (name_normalized)
 );
 
-Creation of MRTA Table
+Creation of META Table
 CREATE TABLE meta (
     id TINYINT NOT NULL PRIMARY KEY DEFAULT 1,
     last_refreshed_at DATETIME
@@ -51,10 +51,30 @@ DB_PASSWORD=yourpassword
 DB_NAME=countries_api
 EXTERNAL_TIMEOUT_MS=10000
 
-git clone <your-repo-url>
+git clone https://github.com/Habeeboss/COUNTRIES-CURRENCY-API
 cd countries-currency-api
-npm install
-npm run dev
+
+ dependencies :{
+    "axios": "^1.13.0",
+    "body-parser": "^1.20.2",
+    "canvas": "^3.2.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "mysql2": "^3.6.0",
+    "node-fetch": "^2.6.12"
+  }
+
+   devDependencies :{
+    "jest": "^30.2.0",
+    "nodemon": "^3.0.1",
+    "supertest": "^7.1.4"
+  }
+
+  To install dependencies;
+npm install axios@^1.13.0 body-parser@^1.20.2 canvas@^3.2.0 dotenv@^16.3.1 express@^4.18.2 mysql2@^3.6.0 node-fetch@^2.6.12 jest@^30.2.0 nodemon@^3.0.1 supertest@^7.1.4
+
+Then to run the app
+npm run dev or node server
 
 API Endpoints and response example
 NigeriaPOSTNigeria  Nigeria http://localhost:3000/countries/refresh Nigeria  Fetch latest data from external APIs, update cache, and regenerate summary image 
