@@ -1,28 +1,37 @@
 const mysql = require("mysql2/promise");
+const fs = require("fs");
+const path = require("path");
+
 let pool;
 
 async function initDb() {
   try {
-    pool = mysql.createPool({
-      host: process.env.DB_HOST || process.env.MYSQL_HOST || "localhost",
-      user: process.env.DB_USER || process.env.MYSQLROOT|| "root",
-      password: process.env.DB_PASSWORD || process.env.MYSQLPASSWORD || "",
-      database: process.env.DB_NAME || process.env.MYSQLDATABASE||"my_countries_api_data",
+    const config = {
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT || 3306,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
       waitForConnections: true,
       connectionLimit: 10,
-      queueLimit: 0
-    });
+      queueLimit: 0,
+      ssl: {
+        rejectUnauthorized: true, // safer for production
+      },
+    };
+
+    pool = mysql.createPool(config);
 
     await pool.query("SELECT 1");
-    console.log("✅ MySQL Connected Successfully");
+    console.log("✅ Connected to Aiven MySQL successfully!");
   } catch (error) {
-    console.error("❌ MySQL Connection Failed:", error);
+    console.error("❌ Database connection failed:", error);
     process.exit(1);
   }
 }
 
 function getPool() {
-  if (!pool) throw new Error("DB not initialized yet");
+  if (!pool) throw new Error("Database not initialized yet!");
   return pool;
 }
 
