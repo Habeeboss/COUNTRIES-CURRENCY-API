@@ -18,7 +18,7 @@ async function initDb() {
     const dbConfig = getDbConfig();
     const sslConfig = await getSSLConfig(dbConfig.host);
 
-    console.log('🔧 Final Database Configuration:', dbConfig);
+    console.log('🔧 Final Database Configuration:');
 
     pool = mysql.createPool({ ...dbConfig, ssl: sslConfig });
 
