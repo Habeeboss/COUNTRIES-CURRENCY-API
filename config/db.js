@@ -6,8 +6,8 @@ let pool;
 
 async function initDb() {
   try {
-    console.log('🚀 Initializing database connection...');
-    console.log('📋 Available Environment Variables:');
+    console.log(' Initializing database connection...');
+    console.log(' Available Environment Variables:');
     console.log('- MYSQLHOST:', process.env.MYSQLHOST || 'NOT SET');
     console.log('- MYSQLUSER:', process.env.MYSQLUSER || 'NOT SET');
     console.log('- MYSQLDATABASE:', process.env.MYSQLDATABASE || 'NOT SET');
@@ -22,17 +22,15 @@ async function initDb() {
 
     pool = mysql.createPool({ ...dbConfig, ssl: sslConfig });
 
-    // Test connection
     await pool.query("SELECT 1");
-    console.log("✅ MySQL Connected Successfully");
-    
-    // Auto-create tables
+    console.log(" MySQL Connected Successfully");
+   
     await createTables();
     
   } catch (error) {
-    console.error("❌ MySQL Connection Failed:", error.message);
+    console.error(" MySQL Connection Failed:", error.message);
     
-    console.log('\n💡 SOLUTION REQUIRED:');
+    console.log('\n SOLUTION REQUIRED:');
     console.log('1. Go to Railway dashboard');
     console.log('2. Click "New Service"');
     console.log('3. Select "MySQL"');
@@ -78,7 +76,7 @@ function getDbConfig() {
   }
 
   // Fallback (will fail in production)
-  console.log('⚠️  No database configuration found. Using localhost fallback (will fail in production)');
+  console.log('  No database configuration found. Using localhost fallback (will fail in production)');
   return {
     host: 'localhost',
     user: 'root',
@@ -93,7 +91,7 @@ function getDbConfig() {
 
 function parseDatabaseUrl(databaseUrl) {
   try {
-    // Remove mysql:// prefix if present
+  
     const urlString = databaseUrl.replace(/^mysql:\/\//, '');
     const [auth, hostPortDatabase] = urlString.split('@');
     const [user, password] = auth.split(':');
@@ -111,7 +109,7 @@ function parseDatabaseUrl(databaseUrl) {
       queueLimit: 0,
     };
   } catch (error) {
-    console.error('❌ Error parsing DATABASE_URL:', error);
+    console.error(' Error parsing DATABASE_URL:', error);
     throw new Error('Invalid DATABASE_URL format');
   }
 }
@@ -119,7 +117,7 @@ function parseDatabaseUrl(databaseUrl) {
 async function getSSLConfig(host) {
   // No SSL needed for Railway MySQL
   if (host && (host.includes('railway.app') || host.includes('railway.internal'))) {
-    console.log("ℹ️  Using Railway MySQL - SSL not required");
+    console.log(" Using Railway MySQL - SSL not required");
     return null;
   }
 
@@ -157,12 +155,12 @@ async function createTables() {
     for (const sql of tablesSQL) {
       await pool.query(sql);
     }
-    console.log("✅ Database tables verified/created");
+    console.log(" Database tables verified/created");
     
     const [tables] = await pool.query("SHOW TABLES");
-    console.log("📊 Current tables:", tables.map(t => Object.values(t)[0]));
+    console.log(" Current tables:", tables.map(t => Object.values(t)[0]));
   } catch (error) {
-    console.error("❌ Table creation failed:", error.message);
+    console.error(" Table creation failed:", error.message);
     throw error;
   }
 }
