@@ -4,6 +4,7 @@ node_modules/
 .env.local
 .env.*.local
 credentials/
+aiven-ca.pem
 
 # Node.js dependencies
 node_modules/
@@ -11,7 +12,7 @@ npm-debug.log
 .env
 .cache/
 cache/
-
+*.pem
 
 # Logs
 logs
