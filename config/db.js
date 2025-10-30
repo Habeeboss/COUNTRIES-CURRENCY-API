@@ -116,7 +116,7 @@ function parseDatabaseUrl(databaseUrl) {
 
 async function getSSLConfig(host) {
   // No SSL needed for Railway MySQL
-  if (host && (host.includes('railway.app') || host.includes('centerbeam.proxy.rlwy.net'))) {
+  if (host && (host.includes('railway.app') || host.includes('railway.internal'))) {
     console.log(" Using Railway MySQL - SSL not required");
     return null;
   }
