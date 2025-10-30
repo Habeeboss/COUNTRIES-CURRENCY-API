@@ -1,4 +1,4 @@
-const { createCanvas } = require("canvas");
+const { createCanvas, registerFont } = require("canvas");
 const path = require("path");
 const fs = require("fs");
 const { getPool } = require("../config/db");
@@ -20,14 +20,17 @@ exports.generateSummaryImage = async () => {
 
   // Gradient background
   const gradient = ctx.createLinearGradient(0, 0, width, height);
-  gradient.addColorStop(0, "#89f7fe"); // light cyan
-  gradient.addColorStop(1, "#66a6ff"); // soft blue
+  gradient.addColorStop(0, "#89f7fe");
+  gradient.addColorStop(1, "#66a6ff");
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, width, height);
 
-  // Header
+  // Register and set font
+  registerFont(path.join(__dirname, "../fonts/Roboto-Bold.ttf"), { family: "Roboto" });
   ctx.fillStyle = "#ffffff";
-  ctx.font = "bold 32px sans-serif";
+  ctx.font = "bold 32px Roboto";
+
+  // Header
   ctx.fillText(`Total Countries: ${stats.total_countries}`, 50, 50);
   ctx.fillText(
     `Last Refreshed: ${stats.last_refreshed_at ? new Date(stats.last_refreshed_at).toISOString() : "N/A"}`,
@@ -36,35 +39,40 @@ exports.generateSummaryImage = async () => {
   );
 
   // Section title
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "bold 28px sans-serif";
+  ctx.font = "bold 28px Roboto";
   ctx.fillText("Top 5 Countries by GDP", 50, 150);
 
-  // Draw bars and text for each country
+  // Draw bars and text
   const barStartY = 180;
   const barHeight = 30;
   const barSpacing = 50;
   topCountries.forEach((c, i) => {
     const gdp = Number(c.estimated_gdp) || 0;
-    
-    // Highlight top country
-    ctx.fillStyle = i === 0 ? "#ffd700" : "#ffffff"; // gold for top, white for others
-    ctx.font = i === 0 ? "bold 26px sans-serif" : "24px sans-serif";
-    
-    ctx.fillText(`${i + 1}. ${c.name} - ${gdp.toLocaleString(undefined, { maximumFractionDigits: 2 })}`, 50, barStartY + i * barSpacing);
-    
-    // Draw a horizontal bar proportional to GDP (scaled)
+    ctx.fillStyle = i === 0 ? "#ffd700" : "#ffffff";
+    ctx.font = i === 0 ? "bold 26px Roboto" : "24px Roboto";
+
+    ctx.fillText(
+      `${i + 1}. ${c.name} - ${gdp.toLocaleString(undefined, { maximumFractionDigits: 2 })}`,
+      50,
+      barStartY + i * barSpacing
+    );
+
     const maxBarWidth = 500;
-    const barWidth = Math.min(maxBarWidth, (gdp / topCountries[0].estimated_gdp) * maxBarWidth);
+    const barWidth = topCountries[0].estimated_gdp
+      ? Math.min(maxBarWidth, (gdp / topCountries[0].estimated_gdp) * maxBarWidth)
+      : 0;
     ctx.fillStyle = i === 0 ? "rgba(255, 215, 0, 0.6)" : "rgba(255, 255, 255, 0.6)";
     ctx.fillRect(400, barStartY + i * barSpacing - 20, barWidth, barHeight);
   });
 
   // Save image
-  const dir = path.join(__dirname, "../public");
+  const dir = path.join(__dirname, "../cache");
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   const imagePath = path.join(dir, "summary.png");
-  fs.writeFileSync(imagePath, canvas.toBuffer("image/png"));
 
-  return "summary.png";
+  const buffer = canvas.toBuffer("image/png");
+  console.log("Generated summary image, buffer size:", buffer.length);
+  fs.writeFileSync(imagePath, buffer);
+
+  return imagePath; // return full path
 };
