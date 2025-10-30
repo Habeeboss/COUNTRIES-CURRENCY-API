@@ -4,8 +4,15 @@ const countryService = require("../services/countryService");
 const { getPool } = require("../config/db");
 const fs = require("fs");
 const path = require("path");
+router.get("/refresh", async (req, res) => {
+  try {
+    const result = await countryService.fetchAndSaveCountries();
+    res.json({ updated: result.updated });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}); 
 
-// Static / fixed routes first
 router.post("/refresh-test", async (req, res) => {
   console.log('🔄 Refresh test endpoint called');
   res.json({
@@ -92,15 +99,6 @@ router.post("/refresh", async (req, res) => {
       error: 'Failed to refresh countries',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
-  }
-});
-
-router.get("/refresh", async (req, res) => {
-  try {
-    const result = await countryService.fetchAndSaveCountries();
-    res.json({ updated: result.updated });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
   }
 });
 
