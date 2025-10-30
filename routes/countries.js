@@ -95,6 +95,16 @@ router.post("/refresh", async (req, res) => {
   }
 });
 
+router.get("/refresh", async (req, res) => {
+  try {
+    const result = await countryService.fetchAndSaveCountries();
+    res.json({ updated: result.updated });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 // Add a new country
 router.post("/add", async (req, res) => {
   try {

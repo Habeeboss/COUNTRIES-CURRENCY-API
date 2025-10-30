@@ -17,6 +17,7 @@ app.use(express.json());
 // Routes
 app.use('/countries', countriesRouter);
 
+
 // Health Check
 app.get('/health', (req, res) => {
   res.status(200).json({
