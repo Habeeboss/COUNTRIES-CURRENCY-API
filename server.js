@@ -3,7 +3,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const countriesRouter = require('./routes/countries');
 const { errorHandler } = require('./middleware/errorHandler');
-const { initDb, getPool } = require('./config/db');
+const { initDb } = require('./config/db');
 const fs = require('fs');
 const path = require('path');
 
@@ -17,62 +17,14 @@ app.use(express.json());
 // Routes
 app.use('/countries', countriesRouter);
 
-// ✅ Health Check (for Railway)
+// Health Check
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'OK',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
   });
-});
-
-// ✅ Single DB Test Route
-app.get("/test-db", async (req, res) => {
-  try {
-    const pool = getPool();
-    const [rows] = await pool.query("SELECT 1 + 1 AS solution");
-    res.json({ 
-      success: true, 
-      message: 'Database connection successful',
-      data: rows 
-    });
-  } catch (err) {
-    console.error("DB Test Error:", err);
-    res.status(500).json({ 
-      success: false, 
-      error: "Database connection failed",
-      details: process.env.NODE_ENV === 'production' ? undefined : err.message 
-    });
-  }
-});
-
-// ✅ Status Route
-app.get('/status', async (req, res, next) => {
-  try {
-    const pool = getPool();
-    const [countRows] = await pool.query('SELECT COUNT(*) as total_countries FROM countries');
-    const [[metaRow]] = await pool.query('SELECT last_refreshed_at FROM meta WHERE id = 1');
-    const last = metaRow ? new Date(metaRow.last_refreshed_at).toISOString() : null;
-    res.json({ 
-      total_countries: countRows[0].total_countries, 
-      last_refreshed_at: last 
-    });
-  } catch (err) {
-    next(err);
-  }
-});
-
-// ✅ Serve Stored Summary Image
-app.get('/countries/image', (req, res) => {
-  const cacheDir = process.env.CACHE_DIR || './cache';
-  const filePath = path.resolve(path.join(cacheDir, 'summary.png'));
-  
-  if (!fs.existsSync(filePath)) {
-    return res.status(404).json({ error: 'Summary image not found' });
-  }
-  
-  res.type('image/png').sendFile(filePath);
 });
 
 // Error handling
@@ -82,22 +34,26 @@ app.use(errorHandler);
 app.use('*', (req, res) => {
   res.status(404).json({
     success: false,
-    message: 'Route not found'
+    message: 'Route not found',
   });
 });
 
-// ✅ Start Server
+// Start server
 if (require.main === module) {
   (async () => {
     try {
-      await initDb();
+      console.log('🚀 Starting server...');
       
-      // Create cache directory if it doesn't exist
+      // Initialize DB first
+      await initDb();
+
+      // Create cache directory
       const cacheDir = process.env.CACHE_DIR || './cache';
       if (!fs.existsSync(cacheDir)) {
         fs.mkdirSync(cacheDir, { recursive: true });
+        console.log(`📁 Cache directory created at ${cacheDir}`);
       }
-      
+
       app.listen(PORT, () => {
         console.log(`✅ Server running on port ${PORT}`);
         console.log(`✅ Environment: ${process.env.NODE_ENV || 'development'}`);
